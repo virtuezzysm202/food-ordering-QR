@@ -1,4 +1,3 @@
-// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -27,11 +26,27 @@ model Menu {
   category    Category  @relation(fields: [categoryId], references: [id])
 }
 
-model Order {
+model Customer {
   id        Int      @id @default(autoincrement())
-  table     String
-  items     String   // JSON format
-  status    String   @default("pending")
+  name      String
+  email     String?  @unique
+  phone     String?
+  address   String?
+  orders    Order[]
   createdAt DateTime @default(now())
+}
+
+
+model Order {
+  id          Int       @id @default(autoincrement())
+  table       String
+  items       String
+  status      String    @default("pending")
+  paidAt      DateTime?                  
+  paymentType String?                   
+  createdAt   DateTime @default(now())
+
+  customerId  Int?
+  customer    Customer? @relation(fields: [customerId], references: [id])
 }
 
