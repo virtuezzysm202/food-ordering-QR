@@ -36,7 +36,7 @@ export default function AdminPage() {
   const handleAddMenu = async () => {
     if (!newMenu.name || !newMenu.price || !newMenu.category) return
 
-    // Ambil ID kategori
+    // ID kategori
     const categoryRes = await fetch('/api/category')
     const categoryList = await categoryRes.json()
     const category = categoryList.find(
@@ -44,7 +44,7 @@ export default function AdminPage() {
     )
     if (!category) return alert('Category not found.')
 
-    // Upload image jika ada
+    // Upload image 
     let imageFileName = 'placeholder.jpg'
     if (imageFile) {
       const formData = new FormData()
@@ -59,7 +59,7 @@ export default function AdminPage() {
       imageFileName = uploadData.fileName
     }
 
-    // Simpan menu ke database
+    // Save menu to database
     const res = await fetch('/api/menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
