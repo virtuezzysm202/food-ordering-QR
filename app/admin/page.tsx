@@ -10,8 +10,16 @@ interface MenuItem {
   image?: string
 }
 
+interface OrderItem {
+  id: number
+  table: string
+  items: string
+  status: string
+  createdAt: string
+}
+
 type CategoryOption = 'Food' | 'Drink'
-type Tab = 'menu' | 'report' | 'statistic'
+type Tab = 'menu' | 'report' | 'statistic' | 'order'
 type ViewMode = 'admin' | 'check'
 
 export default function AdminPage() {
@@ -32,6 +40,15 @@ export default function AdminPage() {
       .then((res) => res.json())
       .then(setMenus)
   }, [])
+
+  useEffect(() => {
+    if (tab === 'order') {
+      fetch('/api/order')
+        .then(res => res.json())
+        .then(setOrders)
+    }
+  }, [tab])
+  
 
   const handleAddMenu = async () => {
     if (!newMenu.name || !newMenu.price || !newMenu.category) return
@@ -86,6 +103,9 @@ export default function AdminPage() {
     }).format(amount);
   }
 
+  const [orders, setOrders] = useState<OrderItem[]>([])
+
+
   const filteredMenus = filterCategory === 'All'
     ? menus
     : menus.filter(menu => menu.category.name.toLowerCase() === filterCategory.toLowerCase())
@@ -113,6 +133,7 @@ export default function AdminPage() {
               { key: 'menu', label: 'Menu Configuration' },
               { key: 'report', label: 'Report' },
               { key: 'statistic', label: 'Statistic' },
+              { key: 'order', label: 'Order' },
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -283,7 +304,45 @@ export default function AdminPage() {
             ))}
           </div>
         </>
+
+        
       )}
+
+{tab === 'order' && (
+  <div>
+    <h2 className="text-xl font-semibold mb-4">📦 Customer Orders</h2>
+    <table className="w-full text-sm border border-gray-300">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="border p-2">Table</th>
+          <th className="border p-2">Items</th>
+          <th className="border p-2">Status</th>
+          <th className="border p-2">Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {orders.map((order: any) => (
+          <tr key={order.id}>
+            <td className="border p-2">{order.table}</td>
+            <td className="border p-2">
+              <ul className="list-disc ml-4">
+                {order.items.map((item: any) => (
+                  <li key={item.id}>
+                    {item.menu.name} × {item.quantity}
+                  </li>
+                ))}
+              </ul>
+            </td>
+            <td className="border p-2">{order.status}</td>
+            <td className="border p-2">{new Date(order.createdAt).toLocaleString()}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
+
     </main>
   )
 }

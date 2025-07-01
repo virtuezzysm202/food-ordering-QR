@@ -20,9 +20,23 @@ export async function PUT(req: Request, { params }: Params) {
 export async function DELETE(_: Request, { params }: Params) {
   const id = parseInt(params.id)
 
-  await prisma.menu.delete({
-    where: { id }
-  })
+  try {
+    // 1. Hapus semua item order yang berkaitan
+    await prisma.orderItem.deleteMany({
+      where: { menuId: id }
+    })
 
-  return NextResponse.json({ message: 'Deleted' })
+    // 2. Hapus menu
+    await prisma.menu.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({ message: 'Deleted' })
+  } catch (error) {
+    console.error('❌ Failed to delete menu:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete menu' },
+      { status: 500 }
+    )
+  }
 }

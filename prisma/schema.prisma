@@ -11,19 +11,21 @@ datasource db {
 }
 
 model Category {
-  id    Int     @id @default(autoincrement())
-  name  String  @unique
+  id    Int    @id @default(autoincrement())
+  name  String @unique
   menus Menu[]
 }
 
 model Menu {
-  id          Int       @id @default(autoincrement())
-  name        String
-  price       Int
-  image       String
-  createdAt   DateTime  @default(now())
-  categoryId  Int
-  category    Category  @relation(fields: [categoryId], references: [id])
+  id         Int      @id @default(autoincrement())
+  name       String
+  price      Int
+  image      String
+  createdAt  DateTime @default(now())
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
 }
 
 model Customer {
@@ -36,17 +38,25 @@ model Customer {
   createdAt DateTime @default(now())
 }
 
-
 model Order {
   id          Int       @id @default(autoincrement())
   table       String
-  items       String
   status      String    @default("pending")
-  paidAt      DateTime?                  
-  paymentType String?                   
-  createdAt   DateTime @default(now())
+  paidAt      DateTime?
+  paymentType String?
+  createdAt   DateTime  @default(now())
 
-  customerId  Int?
-  customer    Customer? @relation(fields: [customerId], references: [id])
+  customerId Int?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  items OrderItem[]
 }
 
+model OrderItem {
+  id       Int   @id @default(autoincrement())
+  order    Order @relation(fields: [orderId], references: [id])
+  orderId  Int
+  menu     Menu  @relation(fields: [menuId], references: [id])
+  menuId   Int
+  quantity Int
+}

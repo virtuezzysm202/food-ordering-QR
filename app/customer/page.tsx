@@ -65,6 +65,35 @@ export default function CustomerPage() {
     cartRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
+      return alert('Cart is empty.')
+    }
+
+    const res = await fetch('/api/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        table: 'A1', // bisa kamu ganti nanti dengan table ID dari QR code
+        customer: {
+          name: 'Guest',
+          email: `guest-${Date.now()}@dummy.com`
+        },
+        items: cart.map(item => ({
+          menuId: item.menu.id,
+          quantity: item.quantity
+        }))
+      })
+    })
+
+    if (res.ok) {
+      alert('✅ Pesanan berhasil dikirim!')
+      setCart([])
+    } else {
+      alert('❌ Gagal melakukan checkout.')
+    }
+  }
+
   return (
     <main className="bg-white text-black min-h-screen">
       {/* Navbar */}
@@ -83,7 +112,6 @@ export default function CustomerPage() {
             <option value="Drink">Drink</option>
           </select>
 
-          {/* Cart Button */}
           <button
             onClick={scrollToCart}
             className="relative bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
@@ -146,10 +174,18 @@ export default function CustomerPage() {
                 </div>
               </div>
             ))}
+
             <div className="flex justify-between mt-4 text-lg font-bold">
               <span>Total:</span>
               <span>{formatCurrency(getTotal())}</span>
             </div>
+
+            <button
+              onClick={handleCheckout}
+              className="w-full mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              ✅ Checkout
+            </button>
           </div>
         )}
       </div>
