@@ -3,21 +3,27 @@
 import { useEffect, useState } from 'react'
 
 interface MenuItem {
-  id: number
-  name: string
-  price: number
-  category: { name: string }
-  image?: string
-  description?: string
-  options?: string
+id: number
+name: string
+price: number
+category: { name: string }
+image?: string
+description?: string
+options?: MenuOption[]
 }
 
 interface OrderItem {
-  id: number
-  table: string
-  items: string
-  status: string
-  createdAt: string
+id: number
+table: string
+items: { id: number; quantity: number; menu: { name: string } }[]
+status: string
+createdAt: string
+}
+
+interface MenuOption {
+label: string
+isRequired: boolean
+extraPrice: number
 }
 
 type CategoryOption = 'Food' | 'Drink'
@@ -25,90 +31,122 @@ type Tab = 'menu' | 'report' | 'statistic' | 'order'
 type ViewMode = 'admin' | 'check'
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<Tab>('menu')
-  const [menus, setMenus] = useState<MenuItem[]>([])
-  const [newMenu, setNewMenu] = useState({
-    name: '',
-    price: '',
-    category: 'Food' as CategoryOption,
-    description: '',
-    options: '',
-  })
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [tabView, setTabView] = useState<ViewMode>('admin')
-  const [filterCategory, setFilterCategory] = useState<CategoryOption | 'All'>('All')
-  const [orders, setOrders] = useState<OrderItem[]>([])
+const [tab, setTab] = useState<Tab>('menu')
+const [menus, setMenus] = useState<MenuItem[]>([])
+const [newMenu, setNewMenu] = useState({
+name: '',
+price: '',
+category: 'Food' as CategoryOption,
+description: '',
+})
+const [imageFile, setImageFile] = useState<File | null>(null)
+const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+const [tabView, setTabView] = useState<ViewMode>('admin')
+const [filterCategory, setFilterCategory] = useState<CategoryOption | 'All'>('All')
+const [orders, setOrders] = useState<OrderItem[]>([])
+const [menuOptions, setMenuOptions] = useState<MenuOption[]>([])
 
-  useEffect(() => {
-    fetch('/api/menu')
-      .then((res) => res.json())
-      .then(setMenus)
-  }, [])
+useEffect(() => {
+fetch('/api/menu')
+.then((res) => res.json())
+.then(setMenus)
+}, [])
 
-  useEffect(() => {
-    if (tab === 'order') {
-      fetch('/api/order')
-        .then(res => res.json())
-        .then(setOrders)
-    }
-  }, [tab])
+useEffect(() => {
+if (tab === 'order') {
+fetch('/api/order')
+.then(res => res.json())
+.then(setOrders)
+}
+}, [tab])
 
-  const handleAddMenu = async () => {
-    if (!newMenu.name || !newMenu.price || !newMenu.category) return
+const handleAddMenu = async () => {
+if (!newMenu.name || !newMenu.price || !newMenu.category) return
 
-    const categoryRes = await fetch('/api/category')
-    const categoryList = await categoryRes.json()
-    const category = categoryList.find(
-      (cat: any) => cat.name.toLowerCase() === newMenu.category.toLowerCase()
-    )
-    if (!category) return alert('Category not found.')
+const categoryRes = await fetch('/api/category')
+const categoryList = await categoryRes.json()
+const category = categoryList.find(
+(cat: { name: string }) => cat.name.toLowerCase() === newMenu.category.toLowerCase()
+)
+if (!category) return alert('Category not found.')
 
-    let imageFileName = 'placeholder.jpg'
-    if (imageFile) {
-      const formData = new FormData()
-      formData.append('file', imageFile)
+let imageFileName = 'placeholder.jpg'
+if (imageFile) {
+const formData = new FormData()
+formData.append('file', imageFile)
 
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
+const uploadRes = await fetch('/api/upload', {
+method: 'POST',
+body: formData,
+})
 
-      const uploadData = await uploadRes.json()
-      imageFileName = uploadData.fileName
-    }
+const uploadData = await uploadRes.json()
+imageFileName = uploadData.fileName
+}
 
-    const res = await fetch('/api/menu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: newMenu.name,
-        price: parseInt(newMenu.price),
-        categoryId: category.id,
-        image: imageFileName,
-        description: newMenu.description,
-        options: newMenu.options,
-      }),
-    })
+const res = await fetch('/api/menu', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+name: newMenu.name,
+price: parseInt(newMenu.price),
+categoryId: category.id,
+image: imageFileName,
+description: newMenu.description,
+options: menuOptions,
+}),
+})
 
-    const menu = await res.json()
-    setMenus([...menus, menu])
-    setNewMenu({ name: '', price: '', category: 'Food', description: '', options: '' })
-    setImageFile(null)
-    setPreviewUrl(null)
+const menu = await res.json()
+setMenus([...menus, menu])
+setNewMenu({ name: '', price: '', category: 'Food', description: '' })
+setImageFile(null)
+setPreviewUrl(null)
+setMenuOptions([])
+}
+
+const formatCurrency = (amount: number, currency: 'IDR' | 'USD' | 'EUR' = 'IDR') => {
+return new Intl.NumberFormat('id-ID', {
+style: 'currency',
+currency,
+minimumFractionDigits: 0,
+}).format(amount)
+}
+
+const filteredMenus = filterCategory === 'All'
+? menus
+: menus.filter(menu => menu.category.name.toLowerCase() === filterCategory.toLowerCase())
+
+const addOptionField = () => {
+setMenuOptions([...menuOptions, { label: '', isRequired: false, extraPrice: 0 }])
+}
+
+const updateOption = (
+  index: number,
+  field: 'label' | 'isRequired' | 'extraPrice',
+  value: string | boolean | number
+) => {
+  const updated = [...menuOptions]
+  const current = { ...updated[index] }
+
+  if (field === 'extraPrice') {
+    current[field] = Number(value)
+  } else {
+    current[field] = value as never
   }
 
-  const formatCurrency = (amount: number, currency: 'IDR' | 'USD' | 'EUR' = 'IDR') => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
+  updated[index] = current
+  setMenuOptions(updated)
+}
 
-  const filteredMenus = filterCategory === 'All'
-    ? menus
-    : menus.filter(menu => menu.category.name.toLowerCase() === filterCategory.toLowerCase())
+
+const removeOption = (index: number) => {
+const updated = [...menuOptions]
+updated.splice(index, 1)
+setMenuOptions(updated)
+}
+
+
 
   return (
     <main className="p-6 bg-white text-black min-h-screen">
@@ -188,16 +226,43 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <div className="flex flex-col">
-                    <label htmlFor="options" className="text-sm font-medium mb-1">Options (comma separated):</label>
-                    <input
-                      id="options"
-                      type="text"
-                      value={newMenu.options}
-                      onChange={(e) => setNewMenu({ ...newMenu, options: e.target.value })}
-                      className="border border-gray-300 p-2 rounded w-64"
-                    />
-                  </div>
+                  <div className="mt-4">
+  <h3 className="font-semibold mb-2">Options</h3>
+  {menuOptions.map((opt, idx) => (
+    <div key={idx} className="flex items-center gap-2 mb-2">
+      <input
+        type="text"
+        placeholder="Label"
+        value={opt.label}
+        onChange={(e) => updateOption(idx, 'label', e.target.value)}
+        className="border p-2 rounded w-40"
+      />
+      <input
+        type="number"
+        placeholder="Extra Price"
+        value={opt.extraPrice}
+        onChange={(e) => updateOption(idx, 'extraPrice', e.target.value)}
+        className="border p-2 rounded w-32"
+      />
+      <label className="flex items-center gap-1">
+        <input
+          type="checkbox"
+          checked={opt.isRequired}
+          onChange={(e) => updateOption(idx, 'isRequired', e.target.checked)}
+        /> Required
+      </label>
+      <button
+        onClick={() => removeOption(idx)}
+        className="text-red-500 hover:underline"
+      >Remove</button>
+    </div>
+  ))}
+  <button
+    onClick={addOptionField}
+    className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
+  >Add Option</button>
+</div>
+
 
                   <div className="flex flex-col">
                     <label htmlFor="image" className="text-sm font-medium mb-1">Photo:</label>
@@ -254,7 +319,14 @@ export default function AdminPage() {
                       <td className="border p-2">{formatCurrency(menu.price)}</td>
                       <td className="border p-2">{menu.category?.name}</td>
                       <td className="border p-2">{menu.description || '-'}</td>
-                      <td className="border p-2">{menu.options || '-'}</td>
+                      <td className="border p-2">
+  {menu.options && menu.options.length > 0
+    ? menu.options.map((opt) =>
+        `${opt.label}${opt.isRequired ? ' (required)' : ''}${opt.extraPrice > 0 ? ` +${formatCurrency(opt.extraPrice)}` : ''}`
+      ).join(', ')
+    : '-'}
+</td>
+
                       <td className="border p-2">
                         <button
                           onClick={() => {
@@ -325,19 +397,34 @@ export default function AdminPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMenus.map(menu => (
-              <div key={menu.id} className="border rounded-lg p-4 shadow hover:shadow-md transition">
-                <img
-                  src={`/uploads/${menu.image || 'placeholder.jpg'}`}
-                  alt={menu.name}
-                  className="w-full h-40 object-cover rounded mb-2"
-                />
-                <h3 className="text-lg font-semibold">{menu.name}</h3>
-                <p className="text-gray-600">{menu.category.name}</p>
-                <p className="text-black font-bold mt-1">{formatCurrency(menu.price)}</p>
-              </div>
-            ))}
-          </div>
+  {filteredMenus.map(menu => (
+    <div key={menu.id} className="border rounded-lg p-4 shadow hover:shadow-md transition">
+      <img
+        src={`/uploads/${menu.image || 'placeholder.jpg'}`}
+        alt={menu.name}
+        className="w-full h-40 object-cover rounded mb-2"
+      />
+      <h3 className="text-lg font-semibold">{menu.name}</h3>
+      <p className="text-gray-600">{menu.category.name}</p>
+      <p className="text-black font-bold mt-1">{formatCurrency(menu.price)}</p>
+      {menu.description && (
+        <p className="text-sm text-gray-700 mt-1">{menu.description}</p>
+      )}
+      {menu.options && menu.options.length > 0 && (
+        <ul className="mt-2 text-sm list-disc list-inside text-gray-800">
+          {menu.options.map((opt, idx) => (
+            <li key={idx}>
+              {opt.label}
+              {opt.isRequired && ' (required)'}
+              {opt.extraPrice > 0 && ` (+${formatCurrency(opt.extraPrice)})`}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  ))}
+</div>
+
         </>
       )}
     </main>

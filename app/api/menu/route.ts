@@ -4,7 +4,10 @@ import prisma from '@/lib/prisma'
 export async function GET() {
   try {
     const menus = await prisma.menu.findMany({
-      include: { category: true },
+      include: {
+        category: true,
+        options: true, // 🔥 TAMBAHKAN INI!
+      },
     })
     return NextResponse.json(menus)
   } catch (error) {
@@ -12,6 +15,7 @@ export async function GET() {
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,15 +28,19 @@ export async function POST(req: NextRequest) {
     const menu = await prisma.menu.create({
       data: {
         name: body.name,
-        price: parseInt(body.price),
+        price: body.price,
         image: body.image,
-        categoryId: parseInt(body.categoryId),
-        description: body.description || null,
-        options: body.options || null,
+        categoryId: body.categoryId,
+        description: body.description,
+        options: {
+          create: body.options?.map((opt: any) => ({
+            label: opt.label,
+            isRequired: opt.isRequired || false,
+            extraPrice: opt.extraPrice || 0
+          }))
+        }
       },
-      include: {
-        category: true,
-      },
+      include: { options: true }
     })
 
     return NextResponse.json(menu)

@@ -16,13 +16,23 @@ model Category {
   menus Menu[]
 }
 
+model MenuOption {
+  id        Int     @id @default(autoincrement())
+  label     String  
+  isRequired Boolean @default(false)
+  extraPrice Int     @default(0)
+  
+  menuId    Int
+  menu      Menu    @relation(fields: [menuId], references: [id])
+}
+
 model Menu {
   id          Int      @id @default(autoincrement())
   name        String
   price       Int
   image       String
   description String?
-  options     String?
+  options     MenuOption[]
   createdAt   DateTime @default(now())
   categoryId  Int
   category   Category @relation(fields: [categoryId], references: [id])

@@ -21,12 +21,17 @@ export async function DELETE(_: Request, { params }: Params) {
   const id = parseInt(params.id)
 
   try {
-    // 1. Hapus semua item order yang berkaitan
+    // 1. delete relation menu option 
+    await prisma.menuOption.deleteMany({
+      where: { menuId: id }
+    })
+
+    // 2. delete relation order items
     await prisma.orderItem.deleteMany({
       where: { menuId: id }
     })
 
-    // 2. Hapus menu
+    // 3. delete menu 
     await prisma.menu.delete({
       where: { id }
     })
