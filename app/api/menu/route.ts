@@ -6,9 +6,10 @@ export async function GET() {
     const menus = await prisma.menu.findMany({
       include: {
         category: true,
-        options: true, // 🔥 TAMBAHKAN INI!
+        options: true, 
       },
     })
+    
     return NextResponse.json(menus)
   } catch (error) {
     console.error('GET /api/menu error:', error)
