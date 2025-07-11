@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
+
 interface MenuItem {
 id: number
 name: string
@@ -47,6 +48,9 @@ const [tabView, setTabView] = useState<ViewMode>('admin')
 const [filterCategory, setFilterCategory] = useState<CategoryOption | 'All'>('All')
 const [orders, setOrders] = useState<OrderItem[]>([])
 const [menuOptions, setMenuOptions] = useState<MenuOption[]>([])
+
+const [editingMenu, setEditingMenu] = useState<MenuItem | null>(null)
+
 
 useEffect(() => {
 fetch('/api/menu')
@@ -101,7 +105,8 @@ stock: parseInt(newMenu.stock),
 })
 
 const menu = await res.json()
-setMenus([...menus, menu])
+const refreshedMenus = await fetch('/api/menu').then(res => res.json())
+setMenus(refreshedMenus)
 setNewMenu({ name: '', price: '', category: 'Food', description: '', stock: '' })
 setImageFile(null)
 setPreviewUrl(null)
@@ -140,6 +145,29 @@ const updateOption = (
 
   updated[index] = current
   setMenuOptions(updated)
+}
+
+const handleUpdateMenu = async () => {
+  if (!editingMenu) return
+
+  const res = await fetch(`/api/menu/${editingMenu.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: editingMenu.name,
+      price: editingMenu.price,
+      stock: editingMenu.stock,
+      description: editingMenu.description,
+    }),
+  })
+
+  if (res.ok) {
+    const updated = await res.json()
+    setMenus(menus.map((m) => (m.id === updated.id ? updated : m)))
+    setEditingMenu(null)
+  } else {
+    alert('❌ Failed to update menu')
+  }
 }
 
 
@@ -277,6 +305,54 @@ setMenuOptions(updated)
   >Add Option</button>
 </div>
 
+{editingMenu && (
+  <div className="mt-8 p-4 bg-yellow-50 border rounded">
+    <h3 className="text-lg font-bold mb-4">✏️ Edit Menu: {editingMenu.name}</h3>
+    <div className="flex flex-wrap gap-4 items-end">
+      <input
+        type="text"
+        value={editingMenu.name}
+        onChange={(e) => setEditingMenu({ ...editingMenu, name: e.target.value })}
+        placeholder="Name"
+        className="border p-2 rounded w-40"
+      />
+      <input
+        type="number"
+        value={editingMenu.price}
+        onChange={(e) => setEditingMenu({ ...editingMenu, price: parseInt(e.target.value) })}
+        placeholder="Price"
+        className="border p-2 rounded w-32"
+      />
+      <input
+        type="number"
+        value={editingMenu.stock ?? 0}
+        onChange={(e) => setEditingMenu({ ...editingMenu, stock: parseInt(e.target.value) })}
+        placeholder="Stock"
+        className="border p-2 rounded w-32"
+      />
+      <textarea
+        value={editingMenu.description || ''}
+        onChange={(e) => setEditingMenu({ ...editingMenu, description: e.target.value })}
+        placeholder="Description"
+        className="border p-2 rounded w-64"
+      />
+      <button
+        onClick={handleUpdateMenu}
+        className="bg-green-600 text-white px-4 py-2 rounded"
+      >
+        ✅ Save
+      </button>
+      <button
+        onClick={() => setEditingMenu(null)}
+        className="bg-gray-300 text-black px-4 py-2 rounded"
+      >
+        ❌ Cancel
+      </button>
+    </div>
+  </div>
+)}
+
+
 
                   <div className="flex flex-col">
                     <label htmlFor="image" className="text-sm font-medium mb-1">Photo:</label>
@@ -340,18 +416,24 @@ setMenuOptions(updated)
           ? menu.options.map((opt) => opt.label).join(', ')
           : '-'}
       </td>
-      <td className="border p-2">
-        <button
-          onClick={() => {
-            fetch(`/api/menu/${menu.id}`, { method: 'DELETE' }).then(() => {
-              setMenus(menus.filter((m) => m.id !== menu.id))
-            })
-          }}
-          className="text-red-600 hover:underline"
-        >
-          Delete
-        </button>
-      </td>
+      <td className="border p-2 space-x-3">
+  <button
+    onClick={() => setEditingMenu(menu)}
+    className="text-blue-600 hover:underline"
+  >
+    Edit
+  </button>
+  <button
+    onClick={() => {
+      fetch(`/api/menu/${menu.id}`, { method: 'DELETE' }).then(() => {
+        setMenus(menus.filter((m) => m.id !== menu.id))
+      })
+    }}
+    className="text-red-600 hover:underline"
+  >
+    Delete
+  </button>
+</td>
     </tr>
   ))}
 </tbody>
