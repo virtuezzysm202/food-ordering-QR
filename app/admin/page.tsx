@@ -8,6 +8,7 @@ name: string
 price: number
 category: { name: string }
 image?: string
+stock: number
 description?: string
 options?: MenuOption[]
 }
@@ -38,6 +39,7 @@ name: '',
 price: '',
 category: 'Food' as CategoryOption,
 description: '',
+stock: '',
 })
 const [imageFile, setImageFile] = useState<File | null>(null)
 const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -94,12 +96,13 @@ categoryId: category.id,
 image: imageFileName,
 description: newMenu.description,
 options: menuOptions,
+stock: parseInt(newMenu.stock),
 }),
 })
 
 const menu = await res.json()
 setMenus([...menus, menu])
-setNewMenu({ name: '', price: '', category: 'Food', description: '' })
+setNewMenu({ name: '', price: '', category: 'Food', description: '', stock: '' })
 setImageFile(null)
 setPreviewUrl(null)
 setMenuOptions([])
@@ -226,6 +229,17 @@ setMenuOptions(updated)
                     />
                   </div>
 
+                  <div className="flex flex-col">
+                      <label htmlFor="stock" className="text-sm font-medium mb-1">Stock:</label>
+                          <input
+                            id="stock"
+                            type="number"
+                            value={newMenu.stock}
+                              onChange={(e) => setNewMenu({ ...newMenu, stock: e.target.value })}
+                              className="border border-gray-300 p-2 rounded w-24"
+                            />
+                    </div>
+
                   <div className="mt-4">
   <h3 className="font-semibold mb-2">Options</h3>
   {menuOptions.map((opt, idx) => (
@@ -304,44 +318,44 @@ setMenuOptions(updated)
                     <th className="border p-2">Name</th>
                     <th className="border p-2">Price</th>
                     <th className="border p-2">Category</th>
+                    <th className="border p-2">Stock</th>
                     <th className="border p-2">Description</th>
                     <th className="border p-2">Options</th>
                     <th className="border p-2">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {menus.map((menu) => (
-                    <tr key={menu.id}>
-                      <td className="border p-2">
-                        <img src={`/uploads/${menu.image || 'placeholder.jpg'}`} alt={menu.name} className="w-16 h-16 object-cover rounded" />
-                      </td>
-                      <td className="border p-2">{menu.name}</td>
-                      <td className="border p-2">{formatCurrency(menu.price)}</td>
-                      <td className="border p-2">{menu.category?.name}</td>
-                      <td className="border p-2">{menu.description || '-'}</td>
-                      <td className="border p-2">
-  {menu.options && menu.options.length > 0
-    ? menu.options.map((opt) =>
-        `${opt.label}${opt.isRequired ? ' (required)' : ''}${opt.extraPrice > 0 ? ` +${formatCurrency(opt.extraPrice)}` : ''}`
-      ).join(', ')
-    : '-'}
-</td>
+  {menus.map((menu) => (
+    <tr key={menu.id}>
+      <td className="border p-2">
+        <img src={`/uploads/${menu.image || 'placeholder.jpg'}`} alt={menu.name} className="w-16 h-16 object-cover rounded" />
+      </td>
+      <td className="border p-2">{menu.name}</td>
+      <td className="border p-2">{formatCurrency(menu.price)}</td>
+      <td className="border p-2">{menu.category?.name}</td>
+      <td className="border p-2">{menu.stock ?? '-'}</td> 
+      <td className="border p-2">{menu.description || '-'}</td>
+      <td className="border p-2">
+        {Array.isArray(menu.options) && menu.options.length > 0
+          ? menu.options.map((opt) => opt.label).join(', ')
+          : '-'}
+      </td>
+      <td className="border p-2">
+        <button
+          onClick={() => {
+            fetch(`/api/menu/${menu.id}`, { method: 'DELETE' }).then(() => {
+              setMenus(menus.filter((m) => m.id !== menu.id))
+            })
+          }}
+          className="text-red-600 hover:underline"
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
 
-                      <td className="border p-2">
-                        <button
-                          onClick={() => {
-                            fetch(`/api/menu/${menu.id}`, { method: 'DELETE' }).then(() => {
-                              setMenus(menus.filter((m) => m.id !== menu.id))
-                            })
-                          }}
-                          className="text-red-600 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
               </table>
             </>
           )}
@@ -397,6 +411,27 @@ setMenuOptions(updated)
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {filteredMenus.map(menu => (
+    <div key={menu.id} className="border rounded-lg p-4 shadow hover:shadow-md transition">
+      <img
+        src={`/uploads/${menu.image || 'placeholder.jpg'}`}
+        alt={menu.name}
+        className="w-full h-40 object-cover rounded mb-2"
+      />
+      <h3 className="text-lg font-semibold">{menu.name}</h3>
+      <p className="text-gray-600">{menu.category.name}</p>
+      <p className="text-black font-bold mt-1">{formatCurrency(menu.price)}</p>
+      <p className="text-sm text-gray-700 mt-1">Stock: {menu.stock ?? '-'}</p> {/* Tambahkan ini */}
+      {Array.isArray(menu.options) && menu.options.length > 0 && (
+        <div className="text-sm text-gray-600 mt-1">
+          <span className="font-medium">Options:</span> {menu.options.map(opt => opt.label).join(', ')}
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
   {filteredMenus.map(menu => (
     <div key={menu.id} className="border rounded-lg p-4 shadow hover:shadow-md transition">
       <img

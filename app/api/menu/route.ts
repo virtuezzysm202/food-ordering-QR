@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         image: body.image,
         categoryId: body.categoryId,
         description: body.description,
+        stock: body.stock || 0,
         options: {
           create: body.options?.map((opt: any) => ({
             label: opt.label,

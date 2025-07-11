@@ -35,6 +35,7 @@ model Menu {
   options     MenuOption[]
   createdAt   DateTime @default(now())
   categoryId  Int
+  stock       Int      @default(0) 
   category   Category @relation(fields: [categoryId], references: [id])
 
   orderItems OrderItem[]
