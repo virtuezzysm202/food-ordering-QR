@@ -279,13 +279,18 @@ setMenuOptions(updated)
         onChange={(e) => updateOption(idx, 'label', e.target.value)}
         className="border p-2 rounded w-40"
       />
-      <input
-        type="number"
-        placeholder="Extra Price"
-        value={opt.extraPrice}
-        onChange={(e) => updateOption(idx, 'extraPrice', e.target.value)}
-        className="border p-2 rounded w-32"
-      />
+  <input
+  type="number"
+  placeholder="Extra Price"
+  value={opt.extraPrice === 0 ? '' : opt.extraPrice}
+  onChange={(e) => {
+    const raw = e.target.value
+    const value = raw === '' ? 0 : parseInt(raw)
+    updateOption(idx, 'extraPrice', value)
+  }}
+  className="border p-2 rounded w-32"
+/>
+
       <label className="flex items-center gap-1">
         <input
           type="checkbox"
