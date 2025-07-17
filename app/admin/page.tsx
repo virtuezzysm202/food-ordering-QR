@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 
 interface MenuItem {
@@ -171,6 +172,8 @@ const handleUpdateMenu = async () => {
 }
 
 
+
+
 const removeOption = (index: number) => {
 const updated = [...menuOptions]
 updated.splice(index, 1)
@@ -179,19 +182,31 @@ setMenuOptions(updated)
 
 
 
+
   return (
     <main className="p-6 bg-white text-black min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">
-          {tabView === 'admin' ? '👨‍🍳 Admin Panel' : '📋 Check Menu'}
-        </h1>
-        <button
-          onClick={() => setTabView(tabView === 'admin' ? 'check' : 'admin')}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          {tabView === 'admin' ? 'Check Menu' : 'Back to Admin'}
-        </button>
-      </div>
+     <div className="flex justify-between items-center mb-6">
+  <h1 className="text-2xl font-bold">
+    {tabView === 'admin' ? '👨‍🍳 Admin Panel' : '📋 Check Menu'}
+  </h1>
+  
+  <div className="flex gap-3">
+    <Link href="/admin/barcodesAdmin">
+      <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+        Barcode Admin
+      </button>
+    </Link>
+
+    <button
+      onClick={() => setTabView(tabView === 'admin' ? 'check' : 'admin')}
+      className="bg-blue-600 text-white px-4 py-2 rounded"
+    >
+      {tabView === 'admin' ? 'Check Menu' : 'Back to Admin'}
+    </button>
+  </div>
+</div>
+
+      
 
       {tabView === 'admin' ? (
         <>
@@ -309,6 +324,8 @@ setMenuOptions(updated)
     className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
   >Add Option</button>
 </div>
+
+
 
 {editingMenu && (
   <div className="mt-8 p-4 bg-yellow-50 border rounded">
