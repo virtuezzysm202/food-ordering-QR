@@ -1,6 +1,8 @@
-'use client'
+"use client"
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 
 interface MenuOption {
   label: string
@@ -30,20 +32,58 @@ export default function CustomerPage() {
   const [menus, setMenus] = useState<MenuItem[]>([])
   const [filterCategory, setFilterCategory] = useState<Category>('All')
   const [cart, setCart] = useState<CartItem[]>([])
+  const [tableValid, setTableValid] = useState<boolean | null>(null)
+
   const cartRef = useRef<HTMLDivElement>(null)
+  const params = useParams()
+  const router = useRouter()
+  if (!params || !params.slug) {
+  return <div>Invalid table</div>
+}
+const slug = params.slug as string
 
   useEffect(() => {
-    fetch('/api/menu')
-      .then((res) => res.json())
-      .then(setMenus)
-  }, [])
+    if (!slug) {
+      setTableValid(false)
+      return
+    }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
+    fetch(`/api/tables/slug/${slug}`).then((res) => {
+      if (res.status === 200) {
+        setTableValid(true)
+        fetch('/api/menu')
+          .then((res) => res.json())
+          .then(setMenus)
+      } else {
+        setTableValid(false)
+      }
+    })
+  }, [slug])
+
+  if (tableValid === false) {
+    return (
+      <main className="flex items-center justify-center min-h-screen bg-white text-black">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Table not found</h1>
+          <p className="text-gray-600">Please scan the correct barcode or contact the waiter.</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (tableValid === null) {
+    return (
+      <main className="flex items-center justify-center min-h-screen bg-white text-black">
+        <p className="text-lg">🔄 Loading...</p>
+      </main>
+    )
+  }
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
     }).format(amount)
-  }
 
   const filteredMenus = filterCategory === 'All'
     ? menus
@@ -104,7 +144,7 @@ export default function CustomerPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        table: 'A1',
+        table: slug,
         customer: {
           name: 'Guest',
           email: `guest-${Date.now()}@dummy.com`
@@ -118,12 +158,13 @@ export default function CustomerPage() {
     })
 
     if (res.ok) {
-      alert('✅ Pesanan berhasil dikirim!')
+      alert('✅ Order Success')
       setCart([])
     } else {
-      alert('❌ Gagal melakukan checkout.')
+      alert('❌ Failed, please check or reload')
     }
   }
+
 
   return (
     <main className="bg-white text-black min-h-screen">

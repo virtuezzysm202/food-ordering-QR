@@ -17,26 +17,26 @@ model Category {
 }
 
 model MenuOption {
-  id        Int     @id @default(autoincrement())
-  label     String  
+  id         Int     @id @default(autoincrement())
+  label      String
   isRequired Boolean @default(false)
   extraPrice Int     @default(0)
-  
-  menuId    Int
-  menu      Menu    @relation(fields: [menuId], references: [id])
+
+  menuId Int
+  menu   Menu @relation(fields: [menuId], references: [id])
 }
 
 model Menu {
-  id          Int      @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   name        String
   price       Int
   image       String
   description String?
   options     MenuOption[]
-  createdAt   DateTime @default(now())
+  createdAt   DateTime     @default(now())
   categoryId  Int
-  stock       Int      @default(0) 
-  category   Category @relation(fields: [categoryId], references: [id])
+  stock       Int          @default(0)
+  category    Category     @relation(fields: [categoryId], references: [id])
 
   orderItems OrderItem[]
 }
@@ -53,7 +53,8 @@ model Customer {
 
 model Order {
   id          Int       @id @default(autoincrement())
-  table       String
+  table       String    
+  tableName   String    @default("Table")
   status      String    @default("pending")
   paidAt      DateTime?
   paymentType String?
@@ -62,7 +63,10 @@ model Order {
   customerId Int?
   customer   Customer? @relation(fields: [customerId], references: [id])
 
-  items OrderItem[]
+  items   OrderItem[]
+
+  tableRelation Table? @relation(fields: [tableId], references: [id])
+  tableId       Int?
 }
 
 model OrderItem {
@@ -72,4 +76,11 @@ model OrderItem {
   menu     Menu  @relation(fields: [menuId], references: [id])
   menuId   Int
   quantity Int
+}
+
+model Table {
+  id     Int     @id @default(autoincrement())
+  name   String
+  slug   String  @unique
+  orders Order[]
 }
