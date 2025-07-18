@@ -171,8 +171,25 @@ const handleUpdateMenu = async () => {
   }
 }
 
+const handleDeleteOrder = async (id: number) => {
+  const confirmed = confirm('Are you sure you want to delete this order?')
+  if (!confirmed) return
 
+  try {
+    const res = await fetch(`/api/order/${id}`, {
+      method: 'DELETE',
+    })
 
+    if (res.ok) {
+      setOrders(orders.filter((order) => order.id !== id))
+    } else {
+      alert('❌ Failed to delete order')
+    }
+  } catch (err) {
+    console.error('Delete error:', err)
+    alert('❌ Error deleting order')
+  }
+}
 
 const removeOption = (index: number) => {
 const updated = [...menuOptions]
@@ -464,39 +481,50 @@ setMenuOptions(updated)
             </>
           )}
 
-          {tab === 'order' && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">📦 Customer Orders</h2>
-              <table className="w-full text-sm border border-gray-300">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border p-2">Table</th>
-                    <th className="border p-2">Items</th>
-                    <th className="border p-2">Status</th>
-                    <th className="border p-2">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order: any) => (
-                    <tr key={order.id}>
-                      <td className="border p-2">{order.table}</td>
-                      <td className="border p-2">
-                        <ul className="list-disc ml-4">
-                          {order.items.map((item: any) => (
-                            <li key={item.id}>
-                              {item.menu.name} × {item.quantity}
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="border p-2">{order.status}</td>
-                      <td className="border p-2">{new Date(order.createdAt).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+{tab === 'order' && (
+  <div>
+    <h2 className="text-xl font-semibold mb-4">📦 Customer Orders</h2>
+    <table className="w-full text-sm border border-gray-300">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="border p-2">Table</th>
+          <th className="border p-2">Items</th>
+          <th className="border p-2">Status</th>
+          <th className="border p-2">Time</th>
+          <th className="border p-2">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {orders.map((order: any) => (
+          <tr key={order.id}>
+            <td className="border p-2">{order.table}</td>
+            <td className="border p-2">
+              <ul className="list-disc ml-4">
+                {order.items.map((item: any) => (
+                  <li key={item.id}>
+                    {item.menu.name} × {item.quantity}
+                  </li>
+                ))}
+              </ul>
+            </td>
+            <td className="border p-2">{order.status}</td>
+            <td className="border p-2">{new Date(order.createdAt).toLocaleString()}</td>
+            <td className="border p-2 text-center">
+              <button
+                onClick={() => handleDeleteOrder(order.id)}
+                className="text-red-600 hover:text-red-800"
+                title="Delete Order"
+              >
+                🗑️
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
         </>
       ) : (
         <>
