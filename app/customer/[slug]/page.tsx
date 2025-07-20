@@ -1,8 +1,7 @@
-"use client"
+'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useParams } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 interface MenuOption {
   label: string
@@ -29,18 +28,32 @@ interface CartItem {
 }
 
 export default function CustomerPage() {
+  const router = useRouter()
+  const params = useParams()
+  const cartRef = useRef<HTMLDivElement>(null)
+
+  const [customerId, setCustomerId] = useState<string | null>(null)
   const [menus, setMenus] = useState<MenuItem[]>([])
   const [filterCategory, setFilterCategory] = useState<Category>('All')
   const [cart, setCart] = useState<CartItem[]>([])
   const [tableValid, setTableValid] = useState<boolean | null>(null)
 
-  const cartRef = useRef<HTMLDivElement>(null)
-  const params = useParams()
-  const router = useRouter()
-  if (!params || !params.slug) {
-  return <div>Invalid table</div>
-}
-const slug = params.slug as string
+  const rawSlug = params?.slug
+const slug = Array.isArray(rawSlug) ? rawSlug[0] : typeof rawSlug === 'string' ? rawSlug : undefined
+
+  // Ambil customerId dari localStorage
+  useEffect(() => {
+    const storedId = localStorage.getItem('customerId')
+    if (storedId) {
+      setCustomerId(storedId)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (slug) {
+      localStorage.setItem('tableSlug', slug) // ✅ Simpan slug saat masuk
+    }
+  }, [slug])
 
   useEffect(() => {
     if (!slug) {
@@ -48,17 +61,32 @@ const slug = params.slug as string
       return
     }
 
-    fetch(`/api/tables/slug/${slug}`).then((res) => {
-      if (res.status === 200) {
-        setTableValid(true)
-        fetch('/api/menu')
-          .then((res) => res.json())
-          .then(setMenus)
-      } else {
+    const fetchData = async () => {
+      try {
+        const tableRes = await fetch(`/api/tables/slug/${slug}`)
+        if (tableRes.status === 200) {
+          setTableValid(true)
+          const menuRes = await fetch('/api/menu')
+          const data = await menuRes.json()
+          setMenus(data)
+        } else {
+          setTableValid(false)
+        }
+      } catch (err) {
         setTableValid(false)
       }
-    })
+    }
+
+    fetchData()
   }, [slug])
+
+  if (!slug) {
+    return (
+      <main className="flex items-center justify-center min-h-screen bg-white text-black">
+        <p className="text-lg">🔄 Waiting for table slug...</p>
+      </main>
+    )
+  }
 
   if (tableValid === false) {
     return (
@@ -135,6 +163,31 @@ const slug = params.slug as string
     cartRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const handleReceiptClick = async () => {
+    if (!customerId) {
+      alert('Order is not exist')
+      return
+    }
+  
+    try {
+      const res = await fetch(`/api/order/by-customer-id/${customerId}`)
+  
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.id) {
+          router.push(`/customer/${slug}/receipt?customerId=${customerId}&table=${slug}`)
+        } else {
+          alert('Order is not exist')
+        }
+      } else {
+        alert('Order is not exist')
+      }
+    } catch (err) {
+      alert('Something went wrong checking the order.')
+    }
+  }
+  
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       return alert('Cart is empty.')
@@ -155,43 +208,62 @@ const slug = params.slug as string
           selectedOptions: item.selectedOptions
         }))
       })
+      
     })
-
     if (res.ok) {
+      const data = await res.json()
       alert('✅ Order Success')
       setCart([])
-    } else {
-      alert('❌ Failed, please check or reload')
+    
+      if (data?.customer?.id) {
+        const customerId = data.customer.id.toString()
+        localStorage.setItem('customerId', customerId)
+        setCustomerId(customerId)
+        router.push(`/customer/${slug}/receipt?customerId=${customerId}&table=${slug}`)
+      } else {
+        alert('Failed to save customer ID. Order might be incomplete.')
+      }
+      setCustomerId(data.customer.id.toString()) // Ini juga penting agar tombol muncul langsung tanpa refresh
+    
+      router.push(`/customer/${slug}/receipt?customerId=${customerId}&table=${slug}`)
     }
   }
-
 
   return (
     <main className="bg-white text-black min-h-screen">
       <nav className="flex justify-between items-center px-6 py-4 shadow sticky top-0 bg-white z-10">
         <h1 className="text-2xl font-bold">📖 Menu</h1>
         <div className="flex items-center gap-4">
-          <label htmlFor="filter" className="text-sm font-medium">Filter:</label>
-          <select
-            id="filter"
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value as Category)}
-            className="border p-2 rounded"
-          >
-            <option value="All">All</option>
-            <option value="Food">Food</option>
-            <option value="Drink">Drink</option>
-          </select>
+  <label htmlFor="filter" className="text-sm font-medium">Filter:</label>
+  <select
+    id="filter"
+    value={filterCategory}
+    onChange={(e) => setFilterCategory(e.target.value as Category)}
+    className="border p-2 rounded"
+  >
+    <option value="All">All</option>
+    <option value="Food">Food</option>
+    <option value="Drink">Drink</option>
+  </select>
 
-          <button
-            onClick={scrollToCart}
-            className="relative bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            🛒 Cart ({cart.length})
-          </button>
-        </div>
+  <button
+    onClick={scrollToCart}
+    className="relative bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+  >
+    🛒 Cart ({cart.length})
+  </button>
+
+  <button
+  onClick={handleReceiptClick}
+  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+>
+  🧾 Order Receipt
+</button>
+
+</div>
       </nav>
 
+    
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
         {filteredMenus.map((menu) => (
           <div key={menu.id} className="border rounded-lg p-4 shadow hover:shadow-md transition">
@@ -283,3 +355,4 @@ const slug = params.slug as string
     </main>
   )
 }
+

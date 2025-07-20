@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-// GET table by slug
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { slug: string } }
-) {
-  const slug = params.slug
+export async function GET(req: NextRequest, context: { params: { slug: string } }) {
+  const slug = context.params.slug
 
   if (!slug) {
     return NextResponse.json({ error: 'Slug not provided' }, { status: 400 })
@@ -22,4 +18,3 @@ export async function GET(
 
   return NextResponse.json(table)
 }
-

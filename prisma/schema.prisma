@@ -48,6 +48,7 @@ model Customer {
   phone     String?
   address   String?
   orders    Order[]
+  customerId Int?  
   createdAt DateTime @default(now())
 }
 

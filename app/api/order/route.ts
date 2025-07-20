@@ -6,7 +6,6 @@ export async function POST(req: Request) {
   try {
     const { table, items, customer } = await req.json()
 
-    // Generate email jika kosong
     const email = customer?.email || `guest-${Date.now()}@example.com`
 
     const createdCustomer = await prisma.customer.upsert({
@@ -26,9 +25,15 @@ export async function POST(req: Request) {
           }))
         }
       },
-      include: { items: true }
+      include: {
+        items: { include: { menu: true } },
+        customer: true
+      }
     })
 
+    console.log('✅ Order created:', order)
+
+    // Kirim response lengkap termasuk order dan customer
     return NextResponse.json(order)
   } catch (error) {
     console.error("❌ Error creating order:", error)
